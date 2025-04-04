@@ -80,8 +80,25 @@ session_start();
     <div class="right">
         <?php if (isset($_SESSION['user_id'])): ?>
             <a href="logout.php">Logout</a>
-            <span class="user-info">Welcome, <?php echo $_SESSION['username']; ?>!</span>
-            <span class="user-info">Balance: <?php echo $_SESSION['balance']; ?>!</span>
+            <a href="profile.php"><span class="user-info">Welcome, <?php echo $_SESSION['username']; ?>!</span></a>
+            <?php
+                if (isset($_SESSION['user_id'])) {
+                    $conn = new mysqli("localhost", "root", "", "online_marketplace");
+                    if (!$conn->connect_error) {
+                        $stmt = $conn->prepare("SELECT balance FROM users WHERE user_id = ?");
+                        $stmt->bind_param("i", $_SESSION['user_id']);
+                        $stmt->execute();
+                        $stmt->bind_result($updated_balance);
+                        if ($stmt->fetch()) {
+                            echo '<span class="user-info">Balance: ' . $updated_balance . '</span>';
+                            $_SESSION['balance'] = $updated_balance; // Update session balance
+                        }
+                        $stmt->close();
+                        $conn->close();
+                    }
+                }
+                ?>
+
         <?php else: ?>
             <a href="login.php">Login</a>
             <a href="sign_up.php">Sign Up</a>

@@ -29,7 +29,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             echo "<p class='error'>Error updating stock: " . $update_stmt->error . "</p>";
         }
-    } else {
+    }
+    // Handle product removal
+    if (isset($_POST['remove_product'])) {
+        $product_id = $_POST['product_id'];
+        $delete_stmt = $conn->prepare("DELETE FROM products WHERE id = ? AND seller_id = ?");
+        $delete_stmt->bind_param("ii", $product_id, $seller_id);
+        if ($delete_stmt->execute()) {
+            echo "<p class='success'>Product removed successfully!</p>";
+        } else {
+            echo "<p class='error'>Error removing product: " . $delete_stmt->error . "</p>";
+        }
+    }
+
+    
+    else {
         // Insert new product
         $name = trim($_POST['name']);
         $description = trim($_POST['description']);
@@ -58,7 +72,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // Fetch existing products for the seller
-$product_stmt = $conn->prepare("SELECT id, name, stock FROM products");
+$product_stmt = $conn->prepare("SELECT id, name, stock FROM products WHERE seller_id = ?");
+$product_stmt->bind_param("i", $seller_id);
 $product_stmt->execute();
 $product_result = $product_stmt->get_result();
 ?>
@@ -201,6 +216,7 @@ $product_result = $product_stmt->get_result();
                     <th>Product Name</th>
                     <th>Current Stock</th>
                     <th>Increase Stock</th>
+                    <th>Remove Product</th>
                 </tr>
                 <?php while ($row = $product_result->fetch_assoc()): ?>
                 <tr>
@@ -213,9 +229,16 @@ $product_result = $product_stmt->get_result();
                             <button type="submit" name="increase_stock">Update</button>
                         </form>
                     </td>
+                    <td>
+                        <form method="POST" onsubmit="return confirm('Are you sure you want to remove this product?');">
+                            <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
+                            <button type="submit" name="remove_product" style="background-color: #dc3545; color: white;">Remove</button>
+                        </form>
+                    </td>
                 </tr>
                 <?php endwhile; ?>
             </table>
+
         <?php else: ?>
             <p>No products found. List a new product above.</p>
         <?php endif; ?>
